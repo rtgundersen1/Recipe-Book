@@ -26,7 +26,7 @@
       overflow: hidden;
     }
 
-    /* Sidebar Navigation */
+    /* Desktop Sidebar Navigation */
     #sidebar {
       width: 320px;
       background: var(--panel);
@@ -34,6 +34,7 @@
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
+      height: 100%;
     }
     .sidebar-header {
       padding: 16px 20px;
@@ -62,17 +63,18 @@
       background: var(--card);
       border: 1px solid var(--border);
       color: var(--text);
-      padding: 8px 12px;
+      padding: 10px 14px;
       border-radius: 6px;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
     }
     .recipe-nav-list {
       flex-grow: 1;
       overflow-y: auto;
       list-style: none;
+      -webkit-overflow-scrolling: touch;
     }
     .nav-item {
-      padding: 14px 20px;
+      padding: 16px 20px;
       border-bottom: 1px solid rgba(55, 65, 81, 0.5);
       cursor: pointer;
       transition: background 0.15s ease;
@@ -82,8 +84,8 @@
       background: rgba(56, 189, 248, 0.15);
       border-left: 4px solid var(--accent);
     }
-    .nav-title { font-size: 0.95rem; font-weight: 600; }
-    .nav-sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+    .nav-title { font-size: 1rem; font-weight: 600; }
+    .nav-sub { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
 
     /* Main Content Area */
     #main-content {
@@ -91,6 +93,8 @@
       overflow-y: auto;
       padding: 32px 40px;
       max-width: 900px;
+      height: 100%;
+      -webkit-overflow-scrolling: touch;
     }
     .sync-status {
       font-size: 0.75rem;
@@ -102,7 +106,24 @@
     }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
 
-    /* Recipe Presentation Card */
+    /* Mobile Back Button */
+    .mobile-back-btn {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      margin-bottom: 20px;
+      width: fit-content;
+    }
+
+    /* Recipe Details Styling */
     .recipe-header { margin-bottom: 20px; }
     .recipe-header h1 { font-size: 1.8rem; margin-bottom: 8px; }
     .tag-container { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -110,7 +131,7 @@
       background: rgba(56, 189, 248, 0.1);
       color: var(--accent);
       border: 1px solid rgba(56, 189, 248, 0.3);
-      padding: 2px 8px;
+      padding: 4px 8px;
       border-radius: 4px;
       font-size: 0.75rem;
       font-weight: 600;
@@ -129,7 +150,7 @@
     .stat-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
     .stat-value { font-size: 1.2rem; font-weight: 700; color: #fff; margin-top: 4px; }
 
-    /* Dynamic Scale & Serving Bar */
+    /* Dynamic Scale & Serving Card */
     .scale-card {
       background: #0f2338;
       border: 1px solid var(--accent);
@@ -139,30 +160,30 @@
     }
     .scale-input-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
     .scale-input-row input {
-      width: 100px;
-      padding: 6px 10px;
+      width: 110px;
+      padding: 8px 10px;
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 4px;
       color: #fff;
-      font-size: 1rem;
+      font-size: 1.05rem;
       font-weight: bold;
     }
     .cronometer-pill {
       background: #060d17;
       border: 1px dashed var(--accent);
-      padding: 8px 12px;
+      padding: 10px 14px;
       border-radius: 6px;
       font-family: ui-monospace, monospace;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       color: var(--accent);
       cursor: pointer;
+      word-break: break-word;
     }
 
-    /* Content Lists */
-    h3 { font-size: 1.1rem; margin: 20px 0 10px; color: var(--accent); }
-    ul, ol { padding-left: 20px; line-height: 1.6; color: #d1d5db; }
-    li { margin-bottom: 6px; }
+    h3 { font-size: 1.15rem; margin: 20px 0 10px; color: var(--accent); }
+    ul, ol { padding-left: 20px; line-height: 1.7; color: #d1d5db; }
+    li { margin-bottom: 8px; }
 
     /* Modal Form */
     #recipe-modal {
@@ -225,10 +246,28 @@
     .btn-cancel { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 8px 16px; border-radius: 6px; cursor: pointer; }
     .btn-save { background: var(--accent); border: none; color: #000; font-weight: 700; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
 
+    /* Mobile Responsive Logic */
     @media (max-width: 768px) {
-      body { flex-direction: column; }
-      #sidebar { width: 100%; height: 220px; }
-      #main-content { padding: 20px; }
+      body { position: relative; width: 100vw; }
+      #sidebar {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0; left: 0;
+        z-index: 10;
+        display: flex;
+      }
+      #main-content {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0; left: 0;
+        z-index: 20;
+        padding: 20px 16px;
+        background: var(--bg);
+        display: none;
+      }
+      .mobile-back-btn { display: inline-flex; }
     }
   </style>
 </head>
@@ -246,6 +285,7 @@
   </div>
 
   <div id="main-content">
+    <button class="mobile-back-btn" onclick="backToList()">← Back to Recipes</button>
     <div class="sync-status">
       <span class="status-dot"></span>
       <span id="sync-msg">Connecting to Google Drive...</span>
@@ -253,7 +293,6 @@
     <div id="active-recipe-view"></div>
   </div>
 
-  <!-- Updated Add Modal with JSON Paste Tab -->
   <div id="recipe-modal">
     <div class="modal-content">
       <div class="modal-tabs">
@@ -261,7 +300,6 @@
         <button class="tab-btn" id="tab-json-btn" onclick="switchTab('json')">Paste Raw JSON</button>
       </div>
 
-      <!-- Tab 1: Form View -->
       <div id="tab-form">
         <div class="form-group">
           <label>Title</label>
@@ -309,7 +347,6 @@
         </div>
       </div>
 
-      <!-- Tab 2: Raw JSON Paste View -->
       <div id="tab-json" style="display: none;">
         <div class="form-group">
           <label>Paste Single Recipe JSON Object</label>
@@ -354,6 +391,7 @@
 
     let activeRecipeId = recipes[0].id;
     let activeTab = 'form';
+    let previousWidth = window.innerWidth;
 
     async function initApp() {
       try {
@@ -405,6 +443,17 @@
       activeRecipeId = id;
       renderNav();
       renderActiveRecipe();
+
+      if (window.innerWidth <= 768) {
+        document.getElementById('sidebar').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        window.scrollTo(0, 0);
+      }
+    }
+
+    function backToList() {
+      document.getElementById('sidebar').style.display = 'flex';
+      document.getElementById('main-content').style.display = 'none';
     }
 
     function renderActiveRecipe() {
@@ -431,12 +480,12 @@
 
         <div class="scale-card">
           <div class="scale-input-row">
-            <label for="portion-input"><strong>Kitchen Scale Portion:</strong></label>
+            <label for="portion-input"><strong>Plate Weight:</strong></label>
             <input type="number" id="portion-input" value="350" oninput="updateScale('${r.id}')" />
             <span>grams</span>
           </div>
           <div id="calculated-macros" style="font-weight: 600; margin-bottom: 8px;"></div>
-          <div id="cronometer-entry" class="cronometer-pill" title="Click to copy" onclick="copyCronometer()"></div>
+          <div id="cronometer-entry" class="cronometer-pill" title="Tap to copy" onclick="copyCronometer()"></div>
         </div>
 
         <h3>Ingredients</h3>
@@ -488,7 +537,6 @@
       `).join('');
     }
 
-    /* Modal & Tab Handlers */
     function openModal() {
       document.getElementById('recipe-modal').style.display = 'flex';
       switchTab('form');
@@ -512,20 +560,19 @@
 
     async function saveNewRecipe() {
       let newR;
-
       if (activeTab === 'json') {
         const raw = document.getElementById('m-raw-json').value.trim();
-        if (!raw) return alert("Please paste a valid JSON object.");
+        if (!raw) return alert("Please paste valid JSON.");
         try {
           newR = JSON.parse(raw);
           if (!newR.title || !newR.totalBatchWeightGrams || !newR.batchMacros) {
-            return alert("JSON is missing required fields (title, totalBatchWeightGrams, or batchMacros).");
+            return alert("Missing required JSON fields (title, totalBatchWeightGrams, or batchMacros).");
           }
           if (!newR.id) {
             newR.id = newR.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
           }
         } catch (e) {
-          return alert("Invalid JSON syntax. Please check for missing brackets or commas.");
+          return alert("Invalid JSON syntax.");
         }
       } else {
         const title = document.getElementById('m-title').value.trim();
@@ -548,7 +595,6 @@
         };
       }
 
-      // Check if updating existing or adding new
       const existingIdx = recipes.findIndex(item => item.id === newR.id);
       if (existingIdx >= 0) {
         recipes[existingIdx] = newR;
@@ -556,13 +602,22 @@
         recipes.unshift(newR);
       }
 
-      activeRecipeId = newR.id;
       closeModal();
-      renderNav();
-      renderActiveRecipe();
-
+      selectRecipe(newR.id);
       await pushToCloud(recipes);
     }
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth !== previousWidth) {
+        previousWidth = window.innerWidth;
+        if (window.innerWidth > 768) {
+          document.getElementById('sidebar').style.display = 'flex';
+          document.getElementById('main-content').style.display = 'block';
+        } else {
+          backToList();
+        }
+      }
+    });
 
     window.onload = initApp;
   </script>
