@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recipe & Macro Engine</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --panel: #111827;
+      --card: #1f2937;
+      --border: #374151;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --success: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Desktop Sidebar Navigation */
+    #sidebar {
+      width: 320px;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      height: 100%;
+    }
+    .sidebar-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .sidebar-header h2 { font-size: 1.1rem; color: var(--accent); }
+    .btn-add {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .btn-add:hover { background: var(--accent-hover); }
+    .search-input {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+    .recipe-nav-list {
+      flex-grow: 1;
+      overflow-y: auto;
+      list-style: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .nav-item {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(55, 65, 81, 0.5);
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .nav-item:hover { background: rgba(56, 189, 248, 0.08); }
+    .nav-item.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-left: 4px solid var(--accent);
+    }
+    .nav-title { font-size: 1rem; font-weight: 600; }
+    .nav-sub { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+    /* Main Content Area */
+    #main-content {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 32px 40px;
+      max-width: 900px;
+      height: 100%;
+      -webkit-overflow-scrolling: touch;
+    }
+    .sync-status {
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
+
+    /* Mobile Back Button */
+    .mobile-back-btn {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      margin-bottom: 20px;
+      width: fit-content;
+    }
+
+    /* Recipe Details Styling */
+    .recipe-header { margin-bottom: 20px; }
+    .recipe-header h1 { font-size: 1.8rem; margin-bottom: 8px; }
+    .tag-container { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .tag-badge {
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .batch-summary {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 12px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .stat-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
+    .stat-value { font-size: 1.2rem; font-weight: 700; color: #fff; margin-top: 4px; }
+
+    /* Dynamic Scale & Serving Card */
+    .scale-card {
+      background: #0f2338;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 18px;
+      margin-bottom: 28px;
+    }
+    .scale-input-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .scale-input-row input {
+      width: 110px;
+      padding: 8px 10px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: bold;
+    }
+    .cronometer-pill {
+      background: #060d17;
+      border: 1px dashed var(--accent);
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-family: ui-monospace, monospace;
+      font-size: 0.85rem;
+      color: var(--accent);
+      cursor: pointer;
+      word-break: break-word;
+    }
+
+    h3 { font-size: 1.15rem; margin: 20px 0 10px; color: var(--accent); }
+    ul, ol { padding-left: 20px; line-height: 1.7; color: #d1d5db; }
+    li { margin-bottom: 8px; }
+
+    /* Modal Form */
+    #recipe-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.75);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      width: 90%;
+      max-width: 550px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-weight: 600;
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .tab-btn.active {
+      color: #000;
+      background: var(--accent);
+    }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; }
+    .form-group input, .form-group textarea {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 8px;
+      color: var(--text);
+      border-radius: 6px;
+      font-family: inherit;
+    }
+    .json-textarea {
+      font-family: monospace !important;
+      font-size: 0.85rem;
+      min-height: 250px;
+    }
+    .form-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+    .btn-cancel { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+    .btn-save { background: var(--accent); border: none; color: #000; font-weight: 700; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+
+    /* Mobile Responsive Logic */
+    @media (max-width: 768px) {
+      body { position: relative; width: 100vw; }
+      #sidebar {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0; left: 0;
+        z-index: 10;
+        display: flex;
+      }
+      #main-content {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0; left: 0;
+        z-index: 20;
+        padding: 20px 16px;
+        background: var(--bg);
+        display: none;
+      }
+      .mobile-back-btn { display: inline-flex; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-header-top">
+        <h2>Recipe Hub</h2>
+        <button class="btn-add" onclick="openModal()">+ Add</button>
+      </div>
+      <input type="text" id="recipe-filter" class="search-input" placeholder="Search recipe or tag..." oninput="filterNav()" />
+    </div>
+    <ul id="recipe-list" class="recipe-nav-list"></ul>
+  </div>
+
+  <div id="main-content">
+    <button class="mobile-back-btn" onclick="backToList()">← Back to Recipes</button>
+    <div class="sync-status">
+      <span class="status-dot"></span>
+      <span id="sync-msg">Connecting to Google Drive...</span>
+    </div>
+    <div id="active-recipe-view"></div>
+  </div>
+
+  <div id="recipe-modal">
+    <div class="modal-content">
+      <div class="modal-tabs">
+        <button class="tab-btn active" id="tab-form-btn" onclick="switchTab('form')">Manual Fields</button>
+        <button class="tab-btn" id="tab-json-btn" onclick="switchTab('json')">Paste Raw JSON</button>
+      </div>
+
+      <div id="tab-form">
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="m-title" placeholder="e.g., Crispy Shake 'N Bake Thighs" />
+        </div>
+        <div class="form-group">
+          <label>Tags (comma separated)</label>
+          <input type="text" id="m-tags" placeholder="high-protein, chicken, quick" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Batch Grams</label>
+            <input type="number" id="m-batch-g" placeholder="740" />
+          </div>
+          <div class="form-group">
+            <label>Batch Calories</label>
+            <input type="number" id="m-cal" placeholder="1340" />
+          </div>
+          <div class="form-group">
+            <label>Protein (g)</label>
+            <input type="number" id="m-p" placeholder="189" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Carbs (g)</label>
+            <input type="number" id="m-c" placeholder="48" />
+          </div>
+          <div class="form-group">
+            <label>Fat (g)</label>
+            <input type="number" id="m-f" placeholder="45" />
+          </div>
+          <div class="form-group">
+            <label>Fiber (g)</label>
+            <input type="number" id="m-fib" placeholder="1.5" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Ingredients (one per line)</label>
+          <textarea id="m-ing" rows="4"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Instructions (one per line)</label>
+          <textarea id="m-inst" rows="4"></textarea>
+        </div>
+      </div>
+
+      <div id="tab-json" style="display: none;">
+        <div class="form-group">
+          <label>Paste Single Recipe JSON Object</label>
+          <textarea id="m-raw-json" class="json-textarea" placeholder="Paste the JSON block here..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-save" onclick="saveNewRecipe()">Save to Cloud</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SYNC_URL = "https://script.google.com/macros/s/AKfycbwSlNXFjEurHCpOqBVrzPgrF-l1Fc_wWiWxOkapLNbMaeArUWTSVCu_kRWRHUFGhpd5GQ/exec";
+
+    let recipes = [
+      {
+        "id": "protein-mac-cheese",
+        "title": "Creamy Protein Mac & Cheese",
+        "tags": ["high-protein", "meal-prep", "pasta"],
+        "totalBatchWeightGrams": 1840,
+        "batchMacros": { "calories": 2625, "protein": 144, "carbs": 366, "fat": 71, "fiber": 16.5 },
+        "ingredients": [
+          "454 g (1 lb) Dry pasta",
+          "340 g Low-fat (2%) cottage cheese",
+          "170 g (6 oz) Sharp cheddar, shredded",
+          "180 g (3/4 cup) 1% milk",
+          "1 tsp Dijon mustard",
+          "1/2 tsp Garlic powder, 1/2 tsp Onion powder, 1/4 tsp Paprika",
+          "Salt & black pepper to taste"
+        ],
+        "instructions": [
+          "Boil pasta until al dente. Reserve 1/2 cup pasta water, then drain.",
+          "Blend cottage cheese, milk, and spices until velvety smooth (no curds).",
+          "Warm gently over low heat, fold in cheddar until melted.",
+          "Toss sauce with pasta, adding splashes of pasta water to thin."
+        ]
+      }
+    ];
+
+    let activeRecipeId = recipes[0].id;
+    let activeTab = 'form';
+    let previousWidth = window.innerWidth;
+
+    async function initApp() {
+      try {
+        document.getElementById('sync-msg').innerText = "Syncing with Google Drive...";
+        const res = await fetch(SYNC_URL, { redirect: "follow" });
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          recipes = data;
+          activeRecipeId = recipes[0].id;
+        } else {
+          await pushToCloud(recipes);
+        }
+        document.getElementById('sync-msg').innerText = "Live Cloud Synced (Google Drive)";
+      } catch (err) {
+        console.warn("Using local defaults:", err);
+        document.getElementById('sync-msg').innerText = "Offline Mode (Local)";
+      }
+      renderNav();
+      renderActiveRecipe();
+    }
+
+    async function pushToCloud(payload) {
+      document.getElementById('sync-msg').innerText = "Pushing updates to Google Drive...";
+      try {
+        await fetch(SYNC_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        document.getElementById('sync-msg').innerText = "Live Cloud Synced (Google Drive)";
+      } catch (err) {
+        console.error("Cloud push failed:", err);
+        document.getElementById('sync-msg').innerText = "Cloud Save Error";
+      }
+    }
+
+    function renderNav() {
+      const list = document.getElementById('recipe-list');
+      list.innerHTML = recipes.map(r => `
+        <li class="nav-item ${r.id === activeRecipeId ? 'active' : ''}" onclick="selectRecipe('${r.id}')">
+          <div class="nav-title">${r.title}</div>
+          <div class="nav-sub">${Math.round((r.batchMacros.protein / (r.batchMacros.calories || 1)) * 400)}% Protein | ${r.totalBatchWeightGrams}g batch</div>
+        </li>
+      `).join('');
+    }
+
+    function selectRecipe(id) {
+      activeRecipeId = id;
+      renderNav();
+      renderActiveRecipe();
+
+      if (window.innerWidth <= 768) {
+        document.getElementById('sidebar').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        window.scrollTo(0, 0);
+      }
+    }
+
+    function backToList() {
+      document.getElementById('sidebar').style.display = 'flex';
+      document.getElementById('main-content').style.display = 'none';
+    }
+
+    function renderActiveRecipe() {
+      const r = recipes.find(item => item.id === activeRecipeId);
+      if (!r) return;
+
+      const pPer100 = ((r.batchMacros.protein / r.totalBatchWeightGrams) * 100).toFixed(1);
+      const cPer100 = ((r.batchMacros.calories / r.totalBatchWeightGrams) * 100).toFixed(0);
+
+      document.getElementById('active-recipe-view').innerHTML = `
+        <div class="recipe-header">
+          <h1>${r.title}</h1>
+          <div class="tag-container">${r.tags.map(t => `<span class="tag-badge">#${t}</span>`).join('')}</div>
+        </div>
+
+        <div class="batch-summary">
+          <div><div class="stat-label">Batch Calories</div><div class="stat-value">${r.batchMacros.calories}</div></div>
+          <div><div class="stat-label">Protein</div><div class="stat-value">${r.batchMacros.protein}g</div></div>
+          <div><div class="stat-label">Carbs</div><div class="stat-value">${r.batchMacros.carbs}g</div></div>
+          <div><div class="stat-label">Fat</div><div class="stat-value">${r.batchMacros.fat}g</div></div>
+          <div><div class="stat-label">Fiber</div><div class="stat-value">${r.batchMacros.fiber}g</div></div>
+          <div><div class="stat-label">Per 100g</div><div class="stat-value">${cPer100} cal | ${pPer100}p</div></div>
+        </div>
+
+        <div class="scale-card">
+          <div class="scale-input-row">
+            <label for="portion-input"><strong>Plate Weight:</strong></label>
+            <input type="number" id="portion-input" value="350" oninput="updateScale('${r.id}')" />
+            <span>grams</span>
+          </div>
+          <div id="calculated-macros" style="font-weight: 600; margin-bottom: 8px;"></div>
+          <div id="cronometer-entry" class="cronometer-pill" title="Tap to copy" onclick="copyCronometer()"></div>
+        </div>
+
+        <h3>Ingredients</h3>
+        <ul>${r.ingredients.map(i => `<li>${i}</li>`).join('')}</ul>
+
+        <h3>Preparation Steps</h3>
+        <ol>${r.instructions.map(step => `<li>${step}</li>`).join('')}</ol>
+      `;
+
+      updateScale(r.id);
+    }
+
+    function updateScale(id) {
+      const r = recipes.find(item => item.id === id);
+      const grams = parseFloat(document.getElementById('portion-input').value) || 0;
+      const ratio = grams / r.totalBatchWeightGrams;
+
+      const cal = Math.round(r.batchMacros.calories * ratio);
+      const p = (r.batchMacros.protein * ratio).toFixed(1);
+      const c = (r.batchMacros.carbs * ratio).toFixed(1);
+      const f = (r.batchMacros.fat * ratio).toFixed(1);
+      const fib = (r.batchMacros.fiber * ratio).toFixed(1);
+
+      document.getElementById('calculated-macros').innerHTML = 
+        `Plate Total: <span style="color:var(--accent);">${cal} kcal</span> &nbsp;|&nbsp; <strong>${p}g Protein</strong> &nbsp;|&nbsp; ${c}g Carbs &nbsp;|&nbsp; ${f}g Fat &nbsp;|&nbsp; ${fib}g Fiber`;
+
+      document.getElementById('cronometer-entry').innerText = 
+        `📋 Copy: ${grams}g ${r.title} = ${cal} kcal, ${p}g P, ${c}g C, ${f}g F, ${fib}g Fiber`;
+    }
+
+    function copyCronometer() {
+      const text = document.getElementById('cronometer-entry').innerText.replace("📋 Copy: ", "");
+      navigator.clipboard.writeText(text);
+      alert("Copied to clipboard!");
+    }
+
+    function filterNav() {
+      const q = document.getElementById('recipe-filter').value.toLowerCase();
+      const filtered = recipes.filter(r => 
+        r.title.toLowerCase().includes(q) || 
+        r.tags.some(t => t.toLowerCase().includes(q))
+      );
+      const list = document.getElementById('recipe-list');
+      list.innerHTML = filtered.map(r => `
+        <li class="nav-item ${r.id === activeRecipeId ? 'active' : ''}" onclick="selectRecipe('${r.id}')">
+          <div class="nav-title">${r.title}</div>
+          <div class="nav-sub">${r.totalBatchWeightGrams}g batch</div>
+        </li>
+      `).join('');
+    }
+
+    function openModal() {
+      document.getElementById('recipe-modal').style.display = 'flex';
+      switchTab('form');
+    }
+    function closeModal() { document.getElementById('recipe-modal').style.display = 'none'; }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      if (tab === 'form') {
+        document.getElementById('tab-form').style.display = 'block';
+        document.getElementById('tab-json').style.display = 'none';
+        document.getElementById('tab-form-btn').classList.add('active');
+        document.getElementById('tab-json-btn').classList.remove('active');
+      } else {
+        document.getElementById('tab-form').style.display = 'none';
+        document.getElementById('tab-json').style.display = 'block';
+        document.getElementById('tab-form-btn').classList.remove('active');
+        document.getElementById('tab-json-btn').classList.add('active');
+      }
+    }
+
+    async function saveNewRecipe() {
+      let newR;
+      if (activeTab === 'json') {
+        const raw = document.getElementById('m-raw-json').value.trim();
+        if (!raw) return alert("Please paste valid JSON.");
+        try {
+          newR = JSON.parse(raw);
+          if (!newR.title || !newR.totalBatchWeightGrams || !newR.batchMacros) {
+            return alert("Missing required JSON fields (title, totalBatchWeightGrams, or batchMacros).");
+          }
+          if (!newR.id) {
+            newR.id = newR.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+          }
+        } catch (e) {
+          return alert("Invalid JSON syntax.");
+        }
+      } else {
+        const title = document.getElementById('m-title').value.trim();
+        if (!title) return alert('Recipe title is required');
+
+        newR = {
+          id: title.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+          title: title,
+          tags: document.getElementById('m-tags').value.split(',').map(s => s.trim()).filter(Boolean),
+          totalBatchWeightGrams: parseFloat(document.getElementById('m-batch-g').value) || 500,
+          batchMacros: {
+            calories: parseFloat(document.getElementById('m-cal').value) || 0,
+            protein: parseFloat(document.getElementById('m-p').value) || 0,
+            carbs: parseFloat(document.getElementById('m-c').value) || 0,
+            fat: parseFloat(document.getElementById('m-f').value) || 0,
+            fiber: parseFloat(document.getElementById('m-fib').value) || 0
+          },
+          ingredients: document.getElementById('m-ing').value.split('\n').filter(Boolean),
+          instructions: document.getElementById('m-inst').value.split('\n').filter(Boolean)
+        };
+      }
+
+      const existingIdx = recipes.findIndex(item => item.id === newR.id);
+      if (existingIdx >= 0) {
+        recipes[existingIdx] = newR;
+      } else {
+        recipes.unshift(newR);
+      }
+
+      closeModal();
+      selectRecipe(newR.id);
+      await pushToCloud(recipes);
+    }
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth !== previousWidth) {
+        previousWidth = window.innerWidth;
+        if (window.innerWidth > 768) {
+          document.getElementById('sidebar').style.display = 'flex';
+          document.getElementById('main-content').style.display = 'block';
+        } else {
+          backToList();
+        }
+      }
+    });
+
+    window.onload = initApp;
+  </script>
+</body>
+</html>
