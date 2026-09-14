@@ -136,6 +136,37 @@
       font-size: 0.75rem;
       font-weight: 600;
     }
+    .servings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 18px;
+    }
+    .servings-row label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .servings-row-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .servings-row input {
+      width: 75px;
+      padding: 6px 8px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: #fff;
+      text-align: center;
+      font-size: 1rem;
+      font-weight: bold;
+    }
     .batch-summary {
       background: var(--panel);
       border: 1px solid var(--border);
@@ -306,6 +337,10 @@
           <input type="text" id="m-title" placeholder="e.g., Crispy Shake 'N Bake Thighs" />
         </div>
         <div class="form-group">
+          <label>Servings</label>
+          <input type="number" id="m-servings" placeholder="4" value="4" />
+        </div>
+        <div class="form-group">
           <label>Tags (comma separated)</label>
           <input type="text" id="m-tags" placeholder="high-protein, chicken, quick" />
         </div>
@@ -368,6 +403,7 @@
       {
         "id": "protein-mac-cheese",
         "title": "Creamy Protein Mac & Cheese",
+        "servings": 4,
         "tags": ["high-protein", "meal-prep", "pasta"],
         "totalBatchWeightGrams": 1840,
         "batchMacros": { "calories": 2625, "protein": 144, "carbs": 366, "fat": 71, "fiber": 16.5 },
@@ -431,12 +467,17 @@
 
     function renderNav() {
       const list = document.getElementById('recipe-list');
-      list.innerHTML = recipes.map(r => `
-        <li class="nav-item ${r.id === activeRecipeId ? 'active' : ''}" onclick="selectRecipe('${r.id}')">
-          <div class="nav-title">${r.title}</div>
-          <div class="nav-sub">${Math.round((r.batchMacros.protein / (r.batchMacros.calories || 1)) * 400)}% Protein | ${r.totalBatchWeightGrams}g batch</div>
-        </li>
-      `).join('');
+      list.innerHTML = recipes.map(r => {
+        const servings = Math.max(1, parseFloat(r.servings) || 1);
+        const sCal = Math.round(r.batchMacros.calories / servings);
+        const sP = (r.batchMacros.protein / servings).toFixed(1);
+        return `
+          <li class="nav-item ${r.id === activeRecipeId ? 'active' : ''}" onclick="selectRecipe('${r.id}')">
+            <div class="nav-title">${r.title}</div>
+            <div class="nav-sub">${sCal} cal | ${sP}g P per serving (${servings} serv)</div>
+          </li>
+        `;
+      }).join('');
     }
 
     function selectRecipe(id) {
@@ -460,8 +501,13 @@
       const r = recipes.find(item => item.id === activeRecipeId);
       if (!r) return;
 
-      const pPer100 = ((r.batchMacros.protein / r.totalBatchWeightGrams) * 100).toFixed(1);
-      const cPer100 = ((r.batchMacros.calories / r.totalBatchWeightGrams) * 100).toFixed(0);
+      const servings = Math.max(1, parseFloat(r.servings) || 1);
+      const sCal = Math.round(r.batchMacros.calories / servings);
+      const sP = (r.batchMacros.protein / servings).toFixed(1);
+      const sC = (r.batchMacros.carbs / servings).toFixed(1);
+      const sF = (r.batchMacros.fat / servings).toFixed(1);
+      const sFib = (r.batchMacros.fiber / servings).toFixed(1);
+      const servingWeight = Math.round(r.totalBatchWeightGrams / servings);
 
       document.getElementById('active-recipe-view').innerHTML = `
         <div class="recipe-header">
@@ -469,19 +515,27 @@
           <div class="tag-container">${r.tags.map(t => `<span class="tag-badge">#${t}</span>`).join('')}</div>
         </div>
 
+        <div class="servings-row">
+          <label for="recipe-servings-input">Recipe Servings:</label>
+          <div class="servings-row-right">
+            <input type="number" id="recipe-servings-input" value="${servings}" min="1" step="1" oninput="changeServings('${r.id}')" />
+            <span id="serving-weight-sub" style="font-size: 0.85rem; color: var(--muted);">(~${servingWeight}g / serv)</span>
+          </div>
+        </div>
+
         <div class="batch-summary">
-          <div><div class="stat-label">Batch Calories</div><div class="stat-value">${r.batchMacros.calories}</div></div>
-          <div><div class="stat-label">Protein</div><div class="stat-value">${r.batchMacros.protein}g</div></div>
-          <div><div class="stat-label">Carbs</div><div class="stat-value">${r.batchMacros.carbs}g</div></div>
-          <div><div class="stat-label">Fat</div><div class="stat-value">${r.batchMacros.fat}g</div></div>
-          <div><div class="stat-label">Fiber</div><div class="stat-value">${r.batchMacros.fiber}g</div></div>
-          <div><div class="stat-label">Per 100g</div><div class="stat-value">${cPer100} cal | ${pPer100}p</div></div>
+          <div><div class="stat-label">Cals / Serv</div><div class="stat-value" id="s-cal">${sCal}</div></div>
+          <div><div class="stat-label">Protein</div><div class="stat-value" id="s-p">${sP}g</div></div>
+          <div><div class="stat-label">Carbs</div><div class="stat-value" id="s-c">${sC}g</div></div>
+          <div><div class="stat-label">Fat</div><div class="stat-value" id="s-f">${sF}g</div></div>
+          <div><div class="stat-label">Fiber</div><div class="stat-value" id="s-fib">${sFib}g</div></div>
+          <div><div class="stat-label">Batch Total</div><div class="stat-value" style="font-size: 0.95rem; color: var(--muted);">${r.batchMacros.calories} cal</div></div>
         </div>
 
         <div class="scale-card">
           <div class="scale-input-row">
             <label for="portion-input"><strong>Plate Weight:</strong></label>
-            <input type="number" id="portion-input" value="350" oninput="updateScale('${r.id}')" />
+            <input type="number" id="portion-input" value="${servingWeight}" oninput="updateScale('${r.id}')" />
             <span>grams</span>
           </div>
           <div id="calculated-macros" style="font-weight: 600; margin-bottom: 8px;"></div>
@@ -495,6 +549,31 @@
         <ol>${r.instructions.map(step => `<li>${step}</li>`).join('')}</ol>
       `;
 
+      updateScale(r.id);
+    }
+
+    function changeServings(id) {
+      const r = recipes.find(item => item.id === id);
+      if (!r) return;
+      const inputVal = parseFloat(document.getElementById('recipe-servings-input').value);
+      r.servings = Math.max(1, inputVal || 1);
+
+      const sCal = Math.round(r.batchMacros.calories / r.servings);
+      const sP = (r.batchMacros.protein / r.servings).toFixed(1);
+      const sC = (r.batchMacros.carbs / r.servings).toFixed(1);
+      const sF = (r.batchMacros.fat / r.servings).toFixed(1);
+      const sFib = (r.batchMacros.fiber / r.servings).toFixed(1);
+      const servingWeight = Math.round(r.totalBatchWeightGrams / r.servings);
+
+      document.getElementById('s-cal').innerText = sCal;
+      document.getElementById('s-p').innerText = sP + 'g';
+      document.getElementById('s-c').innerText = sC + 'g';
+      document.getElementById('s-f').innerText = sF + 'g';
+      document.getElementById('s-fib').innerText = sFib + 'g';
+      document.getElementById('serving-weight-sub').innerText = `(~${servingWeight}g / serv)`;
+
+      // Auto-update plate weight input to match 1 single serving default
+      document.getElementById('portion-input').value = servingWeight;
       updateScale(r.id);
     }
 
@@ -529,12 +608,17 @@
         r.tags.some(t => t.toLowerCase().includes(q))
       );
       const list = document.getElementById('recipe-list');
-      list.innerHTML = filtered.map(r => `
-        <li class="nav-item ${r.id === activeRecipeId ? 'active' : ''}" onclick="selectRecipe('${r.id}')">
-          <div class="nav-title">${r.title}</div>
-          <div class="nav-sub">${r.totalBatchWeightGrams}g batch</div>
-        </li>
-      `).join('');
+      list.innerHTML = filtered.map(r => {
+        const servings = Math.max(1, parseFloat(r.servings) || 1);
+        const sCal = Math.round(r.batchMacros.calories / servings);
+        const sP = (r.batchMacros.protein / servings).toFixed(1);
+        return `
+          <li class="nav-item ${r.id === activeRecipeId ? 'active' : ''}" onclick="selectRecipe('${r.id}')">
+            <div class="nav-title">${r.title}</div>
+            <div class="nav-sub">${sCal} cal | ${sP}g P per serving (${servings} serv)</div>
+          </li>
+        `;
+      }).join('');
     }
 
     function openModal() {
@@ -571,6 +655,9 @@
           if (!newR.id) {
             newR.id = newR.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
           }
+          if (!newR.servings) {
+            newR.servings = 1;
+          }
         } catch (e) {
           return alert("Invalid JSON syntax.");
         }
@@ -581,6 +668,7 @@
         newR = {
           id: title.toLowerCase().replace(/[^a-z0-9]/g, '-'),
           title: title,
+          servings: parseFloat(document.getElementById('m-servings').value) || 1,
           tags: document.getElementById('m-tags').value.split(',').map(s => s.trim()).filter(Boolean),
           totalBatchWeightGrams: parseFloat(document.getElementById('m-batch-g').value) || 500,
           batchMacros: {
